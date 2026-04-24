@@ -29,8 +29,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import type { BeamlineConfig, Motor } from "@/lib/beamline-config"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Clock, CalendarDays, CheckCircle2, AlertCircle } from "lucide-react"
+import { CalendarIcon, Clock, CalendarDays, CheckCircle2, AlertCircle, Trash2, List, X } from "lucide-react"
 import { format, addDays, startOfDay, isBefore, isAfter } from "date-fns"
 
 interface Reservation {
@@ -106,6 +116,9 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
   const [reservations, setReservations] = useState<Reservation[]>(initialReservations)
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
   const [selectedMotor, setSelectedMotor] = useState<Motor | null>(null)
+  const [viewReservationsDialogOpen, setViewReservationsDialogOpen] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [reservationToCancel, setReservationToCancel] = useState<Reservation | null>(null)
   
   // Form state
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
@@ -126,6 +139,33 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
     () => beamline.motors.filter((m) => !!m.combinedOf),
     [beamline.motors]
   )
+
+  // Get all reservations for the selected motor
+  const motorReservations = useMemo(() => {
+    if (!selectedMotor) return []
+    return reservations
+      .filter((r) => r.motorName === selectedMotor.name)
+      .sort((a, b) => {
+        const aStart = new Date(a.startDate)
+        aStart.setHours(parseInt(a.startTime.split(":")[0]))
+        const bStart = new Date(b.startDate)
+        bStart.setHours(parseInt(b.startTime.split(":")[0]))
+        return aStart.getTime() - bStart.getTime()
+      })
+  }, [selectedMotor, reservations])
+
+  // Get current user's reservations
+  const myReservations = useMemo(() => {
+    return reservations
+      .filter((r) => r.user === "Current User")
+      .sort((a, b) => {
+        const aStart = new Date(a.startDate)
+        aStart.setHours(parseInt(a.startTime.split(":")[0]))
+        const bStart = new Date(b.startDate)
+        bStart.setHours(parseInt(b.startTime.split(":")[0]))
+        return aStart.getTime() - bStart.getTime()
+      })
+  }, [reservations])
 
   const handleOpenSchedule = (motor: Motor) => {
     setSelectedMotor(motor)
@@ -153,6 +193,23 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
 
     setReservations((prev) => [...prev, newReservation])
     setScheduleDialogOpen(false)
+  }
+
+  const handleViewReservations = (motor: Motor) => {
+    setSelectedMotor(motor)
+    setViewReservationsDialogOpen(true)
+  }
+
+  const handleCancelReservation = (reservation: Reservation) => {
+    setReservationToCancel(reservation)
+    setCancelDialogOpen(true)
+  }
+
+  const confirmCancelReservation = () => {
+    if (!reservationToCancel) return
+    setReservations((prev) => prev.filter((r) => r.id !== reservationToCancel.id))
+    setReservationToCancel(null)
+    setCancelDialogOpen(false)
   }
 
   const MotorStatusRow = ({ motor }: { motor: Motor }) => {
@@ -216,15 +273,26 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
           )}
         </td>
         <td className="px-4 py-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            onClick={() => handleOpenSchedule(motor)}
-          >
-            <CalendarDays className="size-3.5" />
-            Schedule
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => handleOpenSchedule(motor)}
+            >
+              <CalendarDays className="size-3.5" />
+              Schedule
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => handleViewReservations(motor)}
+            >
+              <List className="size-3.5" />
+              View
+            </Button>
+          </div>
         </td>
       </tr>
     )
@@ -232,6 +300,78 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
 
   return (
     <div className="space-y-6">
+      {/* My Reservations */}
+      {myReservations.length > 0 && (
+        <Card className="bg-card border-border border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-primary">
+                My Reservations
+              </CardTitle>
+              <Badge variant="outline" className="text-[10px] font-mono border-primary text-primary">
+                {myReservations.length} booked
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border border-border overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-primary/5">
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Motor
+                    </th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Date & Time
+                    </th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Description
+                    </th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myReservations.map((reservation) => (
+                    <tr key={reservation.id} className="border-b border-border/50 transition-colors hover:bg-secondary/30">
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-sm font-semibold text-foreground">
+                          {reservation.motorName}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-xs">
+                          <div className="font-medium text-foreground">
+                            {format(reservation.startDate, "MMM d")} {reservation.startTime} - {format(reservation.endDate, "MMM d")} {reservation.endTime}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+                          {reservation.description}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs"
+                          onClick={() => handleCancelReservation(reservation)}
+                        >
+                          <X className="size-3.5" />
+                          Cancel
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Single Motors */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
@@ -461,6 +601,151 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View Reservations Dialog */}
+      <Dialog open={viewReservationsDialogOpen} onOpenChange={setViewReservationsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <List className="size-5" />
+              Reservations for: {selectedMotor?.name}
+            </DialogTitle>
+            <DialogDescription>
+              All scheduled reservations for {selectedMotor?.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {motorReservations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CalendarDays className="size-12 mx-auto mb-3 opacity-50" />
+                <p>No reservations scheduled for this motor.</p>
+              </div>
+            ) : (
+              <div className="rounded-md border border-border overflow-hidden max-h-[400px] overflow-y-auto">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-secondary">
+                    <tr className="border-b border-border">
+                      <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Date & Time
+                      </th>
+                      <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        User
+                      </th>
+                      <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Description
+                      </th>
+                      <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {motorReservations.map((reservation) => {
+                      const isOwnReservation = reservation.user === "Current User"
+                      return (
+                        <tr key={reservation.id} className="border-b border-border/50 transition-colors hover:bg-secondary/30">
+                          <td className="px-4 py-3">
+                            <div className="text-xs">
+                              <div className="font-medium text-foreground">
+                                {format(reservation.startDate, "MMM d")} {reservation.startTime}
+                              </div>
+                              <div className="text-muted-foreground">
+                                to {format(reservation.endDate, "MMM d")} {reservation.endTime}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-foreground">
+                                {reservation.user}
+                              </span>
+                              {isOwnReservation && (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 border-primary text-primary">
+                                  You
+                                </Badge>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
+                              {reservation.description}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {isOwnReservation ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleCancelReservation(reservation)}
+                              >
+                                <Trash2 className="size-3.5" />
+                                Cancel
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewReservationsDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setViewReservationsDialogOpen(false)
+              if (selectedMotor) handleOpenSchedule(selectedMotor)
+            }}>
+              <CalendarDays className="mr-2 size-4" />
+              Add Reservation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Reservation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this reservation?
+              {reservationToCancel && (
+                <div className="mt-3 p-3 rounded-md bg-secondary/50 text-sm">
+                  <div className="font-medium text-foreground">
+                    Motor: {reservationToCancel.motorName}
+                  </div>
+                  <div className="text-muted-foreground mt-1">
+                    {format(reservationToCancel.startDate, "MMM d")} {reservationToCancel.startTime} - {format(reservationToCancel.endDate, "MMM d")} {reservationToCancel.endTime}
+                  </div>
+                  <div className="text-muted-foreground mt-1 truncate">
+                    {reservationToCancel.description}
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setReservationToCancel(null)}>
+              Keep Reservation
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmCancelReservation}
+            >
+              Yes, Cancel Reservation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
