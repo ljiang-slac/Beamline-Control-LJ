@@ -150,19 +150,17 @@ export const BEAMLINES: BeamlineConfig[] = [
     status: "operational",
     ringCurrent: 499.7,
     motors: [
-      // ── 8 real (physical) motors ──
+      // ── 6 real (physical) motors ──
       { name: "Crystal",  description: "Crystal Bragg angle",        position: 17.520,  unit: "deg",  lowerLimit: 3,     upperLimit: 75,    velocity: 0.5,  status: "idle",  encoderReadback: 17.519 },
       { name: "TempName", description: "Temperature controller",     position: 25.000,  unit: "degC", lowerLimit: -196,  upperLimit: 1000,  velocity: 5.0,  status: "idle",  encoderReadback: 25.002 },
       { name: "TableV1",  description: "Table vertical jack #1",     position: 0.000,   unit: "mm",   lowerLimit: -25,   upperLimit: 25,    velocity: 0.5,  status: "idle",  encoderReadback: 0.001  },
       { name: "TableV2",  description: "Table vertical jack #2",     position: 0.000,   unit: "mm",   lowerLimit: -25,   upperLimit: 25,    velocity: 0.5,  status: "idle",  encoderReadback: -0.001 },
-      { name: "SlitHGap", description: "Slit horizontal gap",        position: 2.000,   unit: "mm",   lowerLimit: 0,     upperLimit: 20,    velocity: 0.2,  status: "idle",  encoderReadback: 2.001  },
-      { name: "SlitVGap", description: "Slit vertical gap",          position: 1.000,   unit: "mm",   lowerLimit: 0,     upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 1.000  },
-      { name: "SlitHCen", description: "Slit horizontal center",     position: 0.000,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 0.002  },
-      { name: "SlitVCen", description: "Slit vertical center",       position: 0.000,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: -0.001 },
+      { name: "SLITH",    description: "Slit horizontal",            position: 2.000,   unit: "mm",   lowerLimit: 0,     upperLimit: 20,    velocity: 0.2,  status: "idle",  encoderReadback: 2.001  },
+      { name: "SLITV",    description: "Slit vertical",              position: 1.000,   unit: "mm",   lowerLimit: 0,     upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 1.000  },
       // ── 3 combined (virtual) motors ──
       { name: "TableVert", description: "Table vertical (V1 + V2)",  position: 0.000,   unit: "mm",   lowerLimit: -25,   upperLimit: 25,    velocity: 0.5,  status: "idle",  encoderReadback: 0.000, combinedOf: ["TableV1", "TableV2"] },
       { name: "mono",      description: "Mono (Crystal + TableVert)",position: 17.520,  unit: "deg",  lowerLimit: 3,     upperLimit: 75,    velocity: 0.5,  status: "idle",  encoderReadback: 17.519, combinedOf: ["Crystal", "TableVert"] },
-      { name: "SLITS",     description: "Slit assembly (gap + center)", position: 0.000, unit: "mm",   lowerLimit: -10,   upperLimit: 20,    velocity: 0.2,  status: "idle",  encoderReadback: 0.000, combinedOf: ["SlitHGap", "SlitVGap", "SlitHCen", "SlitVCen"] },
+      { name: "SLITS",     description: "Slit assembly (H + V)",     position: 0.000,   unit: "mm",   lowerLimit: 0,     upperLimit: 20,    velocity: 0.2,  status: "idle",  encoderReadback: 0.000, combinedOf: ["SLITH", "SLITV"] },
     ],
     ionChambers: [
       { name: "I0", label: "Incident (I0)", currentReading: 1.87e8, unit: "counts/s", gain: "1e8", voltage: 300 },
