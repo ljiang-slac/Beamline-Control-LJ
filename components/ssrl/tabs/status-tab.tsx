@@ -83,18 +83,24 @@ const timeSlots = Array.from({ length: 24 }, (_, i) => {
   return `${hour}:00`
 })
 
-// Get all motor names that affect this motor (direct + any combined motor that includes it)
+// Get all motor names that affect this motor (direct + any combined motor that includes it, recursively)
 function getRelatedMotorNames(motorName: string, motors: Motor[]): string[] {
-  const relatedNames = [motorName]
+  const relatedNames = new Set<string>([motorName])
   
-  // Find all combined motors that include this motor
-  motors.forEach((motor) => {
-    if (motor.combinedOf && motor.combinedOf.includes(motorName)) {
-      relatedNames.push(motor.name)
-    }
-  })
+  // Recursively find all combined motors that include this motor (directly or indirectly)
+  function findParentCombinedMotors(name: string) {
+    motors.forEach((motor) => {
+      if (motor.combinedOf && motor.combinedOf.includes(name) && !relatedNames.has(motor.name)) {
+        relatedNames.add(motor.name)
+        // Recursively find combined motors that include this combined motor
+        findParentCombinedMotors(motor.name)
+      }
+    })
+  }
   
-  return relatedNames
+  findParentCombinedMotors(motorName)
+  
+  return Array.from(relatedNames)
 }
 
 function getMotorStatus(motorName: string, reservations: Reservation[], motors: Motor[]): "in-use" | "available" {
