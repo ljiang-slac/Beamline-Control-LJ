@@ -11,8 +11,9 @@ import { ReadoutTab } from "@/components/ssrl/tabs/readout-tab"
 import { DataDisplayTab } from "@/components/ssrl/tabs/data-display-tab"
 import { FrontendGUITab } from "@/components/ssrl/tabs/frontend-gui-tab"
 import { ScanDemoTab } from "@/components/ssrl/tabs/scan-demo-tab"
+import { StatusTab } from "@/components/ssrl/tabs/status-tab"
 import { BEAMLINES, getBeamlineById } from "@/lib/beamline-config"
-import { Database, Gauge, Monitor, BarChart3, Layout, FlaskConical } from "lucide-react"
+import { Database, Gauge, Monitor, BarChart3, Layout, FlaskConical, Activity } from "lucide-react"
 
 const tabTriggerClass =
   "gap-1.5 rounded-none border-b-2 border-transparent px-4 text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary"
@@ -63,6 +64,11 @@ export default function SSRLControlSystem() {
                   <span className="hidden sm:inline">Scan Demo</span>
                   <span className="sm:hidden">Scans</span>
                 </TabsTrigger>
+                <TabsTrigger value="status" className={tabTriggerClass}>
+                  <Activity className="size-3.5" />
+                  <span className="hidden sm:inline">Status</span>
+                  <span className="sm:hidden">Status</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -85,6 +91,9 @@ export default function SSRLControlSystem() {
                 </TabsContent>
                 <TabsContent value="scans" className="mt-0">
                   <ScanDemoTab beamline={beamline} />
+                </TabsContent>
+                <TabsContent value="status" className="mt-0">
+                  <StatusTab beamline={beamline} />
                 </TabsContent>
               </div>
             </div>

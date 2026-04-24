@@ -150,14 +150,19 @@ export const BEAMLINES: BeamlineConfig[] = [
     status: "operational",
     ringCurrent: 499.7,
     motors: [
-      // ── 4 real (physical) motors ──
+      // ── 8 real (physical) motors ──
       { name: "Crystal",  description: "Crystal Bragg angle",        position: 17.520,  unit: "deg",  lowerLimit: 3,     upperLimit: 75,    velocity: 0.5,  status: "idle",  encoderReadback: 17.519 },
       { name: "TempName", description: "Temperature controller",     position: 25.000,  unit: "degC", lowerLimit: -196,  upperLimit: 1000,  velocity: 5.0,  status: "idle",  encoderReadback: 25.002 },
       { name: "TableV1",  description: "Table vertical jack #1",     position: 0.000,   unit: "mm",   lowerLimit: -25,   upperLimit: 25,    velocity: 0.5,  status: "idle",  encoderReadback: 0.001  },
       { name: "TableV2",  description: "Table vertical jack #2",     position: 0.000,   unit: "mm",   lowerLimit: -25,   upperLimit: 25,    velocity: 0.5,  status: "idle",  encoderReadback: -0.001 },
-      // ── 2 combined (virtual) motors ──
+      { name: "S1SPEAR",  description: "Slit 1 SPEAR side",          position: 5.000,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 5.001  },
+      { name: "S1SSRL",   description: "Slit 1 SSRL side",           position: 5.000,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 4.999  },
+      { name: "S1TOP",    description: "Slit 1 top blade",           position: 2.500,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 2.501  },
+      { name: "S1BOTTOM", description: "Slit 1 bottom blade",        position: 2.500,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 2.499  },
+      // ── 3 combined (virtual) motors ──
       { name: "TableVert", description: "Table vertical (V1 + V2)",  position: 0.000,   unit: "mm",   lowerLimit: -25,   upperLimit: 25,    velocity: 0.5,  status: "idle",  encoderReadback: 0.000, combinedOf: ["TableV1", "TableV2"] },
       { name: "mono",      description: "Mono (Crystal + TableVert)",position: 17.520,  unit: "deg",  lowerLimit: 3,     upperLimit: 75,    velocity: 0.5,  status: "idle",  encoderReadback: 17.519, combinedOf: ["Crystal", "TableVert"] },
+      { name: "SLITS",     description: "Slit 1 assembly",           position: 0.000,   unit: "mm",   lowerLimit: -10,   upperLimit: 10,    velocity: 0.2,  status: "idle",  encoderReadback: 0.000, combinedOf: ["S1SPEAR", "S1SSRL", "S1TOP", "S1BOTTOM"] },
     ],
     ionChambers: [
       { name: "I0", label: "Incident (I0)", currentReading: 1.87e8, unit: "counts/s", gain: "1e8", voltage: 300 },
