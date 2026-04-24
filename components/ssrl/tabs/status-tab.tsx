@@ -83,25 +83,43 @@ const timeSlots = Array.from({ length: 24 }, (_, i) => {
   return `${hour}:00`
 })
 
-function getMotorStatus(motorName: string, reservations: Reservation[]): "in-use" | "available" {
+// Get all motor names that affect this motor (direct + any combined motor that includes it)
+function getRelatedMotorNames(motorName: string, motors: Motor[]): string[] {
+  const relatedNames = [motorName]
+  
+  // Find all combined motors that include this motor
+  motors.forEach((motor) => {
+    if (motor.combinedOf && motor.combinedOf.includes(motorName)) {
+      relatedNames.push(motor.name)
+    }
+  })
+  
+  return relatedNames
+}
+
+function getMotorStatus(motorName: string, reservations: Reservation[], motors: Motor[]): "in-use" | "available" {
   const now = new Date()
+  const relatedNames = getRelatedMotorNames(motorName, motors)
+  
   const currentReservation = reservations.find((r) => {
     const start = new Date(r.startDate)
     start.setHours(parseInt(r.startTime.split(":")[0]), parseInt(r.startTime.split(":")[1]))
     const end = new Date(r.endDate)
     end.setHours(parseInt(r.endTime.split(":")[0]), parseInt(r.endTime.split(":")[1]))
-    return r.motorName === motorName && now >= start && now <= end
+    return relatedNames.includes(r.motorName) && now >= start && now <= end
   })
   return currentReservation ? "in-use" : "available"
 }
 
-function getNextReservation(motorName: string, reservations: Reservation[]): Reservation | undefined {
+function getNextReservation(motorName: string, reservations: Reservation[], motors: Motor[]): Reservation | undefined {
   const now = new Date()
+  const relatedNames = getRelatedMotorNames(motorName, motors)
+  
   return reservations
     .filter((r) => {
       const start = new Date(r.startDate)
       start.setHours(parseInt(r.startTime.split(":")[0]), parseInt(r.startTime.split(":")[1]))
-      return r.motorName === motorName && start > now
+      return relatedNames.includes(r.motorName) && start > now
     })
     .sort((a, b) => {
       const aStart = new Date(a.startDate)
@@ -213,8 +231,8 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
   }
 
   const MotorStatusRow = ({ motor }: { motor: Motor }) => {
-    const status = getMotorStatus(motor.name, reservations)
-    const nextReservation = getNextReservation(motor.name, reservations)
+    const status = getMotorStatus(motor.name, reservations, beamline.motors)
+    const nextReservation = getNextReservation(motor.name, reservations, beamline.motors)
     const isCombined = !!motor.combinedOf
 
     return (
@@ -263,8 +281,13 @@ export function StatusTab({ beamline }: { beamline: BeamlineConfig }) {
         <td className="px-4 py-3">
           {nextReservation ? (
             <div className="text-xs text-muted-foreground">
-              <div className="font-medium text-foreground">
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
                 {format(nextReservation.startDate, "MMM d")} at {nextReservation.startTime}
+                {nextReservation.motorName !== motor.name && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 border-accent text-accent font-normal">
+                    via {nextReservation.motorName}
+                  </Badge>
+                )}
               </div>
               <div className="truncate max-w-[150px]">{nextReservation.description}</div>
             </div>
